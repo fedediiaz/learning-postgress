@@ -15,3 +15,7 @@ On the left side pannel, right click on the newly created db name and press rest
 ![text](img/restore.png)
 
 If it fails, check online for help, else continue to the begginners path
+
+[Beginner](/beginner/README.md)
+
+![text](img/ERD.png)
