@@ -232,6 +232,7 @@ Practice using the `WHERE` clause and various operators to filter data.
 3. Retrieve films released between 2005 and 2007.
 4. Retrieve actors whose last name ends with 'son'.
 5. Retrieve payments where the amount is greater than 5.00.
+6. Retrieve actors whose first name is exactly 5 characters long, starts with J and ends with e.
 
 ### **Solutions:**
 
@@ -271,6 +272,12 @@ Practice using the `WHERE` clause and various operators to filter data.
    ```sql
    SELECT * FROM payment
    WHERE amount > 5.00;
+   ```
+
+6. **Retrieve actors whose first name is exactly 5 characters long, starts with J and ends with e:**
+
+   ```sql
+   SELECT * FROM actor WHERE first_name LIKE 'J___e';
    ```
 
 </details>
@@ -358,13 +365,15 @@ Practice sorting data using `ORDER BY`.
 
 ## **Aggregate Functions**
 
-Aggregate functions perform calculations on a set of values and return a single value.
+Aggregate functions perform calculations on a set of values and return a **single value**.
 
 - **COUNT**: Returns the number of rows.
 - **SUM**: Returns the sum of values.
 - **AVG**: Returns the average value.
 - **MIN**: Returns the minimum value.
 - **MAX**: Returns the maximum value.
+
+_Note:_ if you want to check what other functions are available [click here](https://www.postgresql.org/docs/9.5/functions-aggregate.html)
 
 **Example:**
 
@@ -430,8 +439,10 @@ Practice using aggregate functions and grouping data.
 1. Count the total number of customers.
 2. Find the minimum, maximum, and average `rental_rate` from the `film` table.
 3. List the number of films in each `language_id`.
-4. Find the total amount of payments made on '2005-05-25'.
+4. Find the total amount of payments made on '2007-02-17'.
 5. List each film rating and the average length of films for each rating.
+6. Find all customers who have made more than 30 rental transactions
+7. Identify staff members who have processed an average payment amount greater than $4.00, but only consider payments made before '2007-02-15'. Display the staff_id and their AVG payment amount.
 
 ### **Solutions:**
 
@@ -466,7 +477,7 @@ Practice using aggregate functions and grouping data.
    ```sql
    SELECT SUM(amount) AS total_payments
    FROM payment
-   WHERE DATE(payment_date) = '2005-05-25';
+   WHERE DATE(payment_date) = '2007-02-17';
    ```
 
 5. **List each film rating and the average length of films for each rating:**
@@ -477,7 +488,26 @@ Practice using aggregate functions and grouping data.
    GROUP BY rating;
    ```
 
-</details>
+6. **Find all customers who have made more than 30 rental transactions:**
+
+   ```sql
+   SELECT customer_id, COUNT(rental_id) AS total_rentals
+   FROM rental
+   GROUP BY customer_id
+   HAVING COUNT(rental_id) > 30;
+   ```
+
+7. **Identify staff members who have processed an average payment amount greater than $4.00, but only consider payments made before '2007-02-17'. Display the staff_id and their AVG payment amount:**
+
+   ```sql
+   SELECT AVG(amount) as avg_amount, staff_id
+   FROM payment
+   WHERE DATE(payment_date) < '2007-02-17'
+   GROUP BY staff_id
+   HAVING AVG(amount) > 4;
+   ```
+
+   </details>
 
 ---
 
@@ -1143,108 +1173,347 @@ Practice writing subqueries.
 
 ---
 
-# **Lesson 7: Modifying Data**
+# **Lesson 7: Creating a Database and Understanding Data Types**
 
-## **INSERT Statements**
+## **Introduction**
 
-Used to insert new records into a table.
+Before we start building tables, it is important to understand the data types PostgreSQL supports. Each column in a table has a specific data type that defines what kind of data it can hold. In this lesson, we will:
 
-**Syntax:**
+- Learn about common PostgreSQL data types.
+- Learn how to create and drop a database.
+- Prepare for creating our first table in the next lesson.
+
+---
+
+## **Common PostgreSQL Data Types**
+
+| Type         | Description                                    |
+| ------------ | ---------------------------------------------- |
+| `INTEGER`    | Whole numbers                                  |
+| `VARCHAR(n)` | Variable-length strings up to `n` characters   |
+| `TEXT`       | Unlimited length string                        |
+| `BOOLEAN`    | True or false                                  |
+| `DATE`       | Calendar date (year, month, day)               |
+| `TIMESTAMP`  | Date and time                                  |
+| `SERIAL`     | Auto-incrementing integer (syntactic shortcut) |
+
+_Note_: For a list of all the available types [click here](https://www.postgresql.org/docs/current/datatype.html#DATATYPE-TABLE)
+
+## **Creating and Dropping a Database**
+
+### **Create a Database**
+
+In pgAdmin:
+
+1. Right-click "Databases" > "Create" > "Database".
+2. Name it `book_tracker`, then click Save.
+
+Alternatively in SQL:
 
 ```sql
-INSERT INTO table_name (column1, column2, ...)
-VALUES (value1, value2, ...);
+CREATE DATABASE book_tracker;
 ```
 
-**Example:**
-
-Add a new category:
+### **Drop a Database**
 
 ```sql
-INSERT INTO category (name)
-VALUES ('Documentary');
+DROP DATABASE book_tracker;
 ```
 
-## **UPDATE Statements**
+> ⚠️ This will delete the entire database and all its data. Use with caution.
 
-Used to modify existing records.
+---
 
-**Syntax:**
+# **Lesson 8: Creating Basic Tables**
+
+## **Introduction**
+
+Now that we understand data types and have created a database, let's define our first table for the book tracking app. We will also learn how to insert data and use default values.
+
+By the end of this lesson, you will be able to:
+
+- Create a table using common data types.
+- Use constraints like `PRIMARY KEY`, `NOT NULL`, and `DEFAULT`.
+- Insert data using SQL.
+
+---
+
+## **Walkthrough**
+
+### **1. Creating the `books` Table**
 
 ```sql
-UPDATE table_name
-SET column1 = value1, column2 = value2, ...
-WHERE condition;
+CREATE TABLE books (
+  book_id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  author VARCHAR(100) NOT NULL,
+  publication_year INTEGER,
+  is_read BOOLEAN DEFAULT false,
+  date_added DATE DEFAULT CURRENT_DATE
+);
 ```
 
-**Example:**
-
-Update a customer's email:
+### **2. Inserting Sample Data**
 
 ```sql
-UPDATE customer
-SET email = 'newemail@example.com'
-WHERE customer_id = 1;
-```
-
-## **DELETE Statements**
-
-Used to delete existing records.
-
-**Syntax:**
-
-```sql
-DELETE FROM table_name
-WHERE condition;
-```
-
-**Example:**
-
-Delete a customer record:
-
-```sql
-DELETE FROM customer
-WHERE customer_id = 1;
+INSERT INTO books (title, author, publication_year, is_read)
+VALUES
+  ('The Pragmatic Programmer', 'Andrew Hunt', 1999, true),
+  ('Clean Code', 'Robert C. Martin', 2008, false);
 ```
 
 ---
 
-## **Exercise 7**
+## **Exercises**
 
-### **Objective:**
-
-Practice modifying data using INSERT, UPDATE, and DELETE statements.
+### **Objective:** Practice creating and populating a simple table.
 
 ### **Tasks:**
 
-1. Insert a new actor named 'John Doe'.
-2. Update the rental rate of all films to 0.99 where the `rental_rate` is greater than 4.99.
-3. Delete all films released before the year 2000.
+1. Create a new table called `authors` with the following columns:
+
+   - `author_id` (auto-incremented primary key)
+   - `full_name` (text, required)
+
+2. Insert two authors:
+
+   - "Cal Newport"
+   - "James Clear"
+
+3. Add a new book: "Deep Work" by "Cal Newport", published in 2016, marked as read.
 
 ### **Solutions:**
 
 <details>
-  <summary>Click here to view solutions</summary>
+<summary>Click to view solutions</summary>
 
-1. ```sql
-   INSERT INTO actor (first_name, last_name)
-   VALUES ('John', 'Doe');
-   ```
+**1. Create `authors` table:**
 
-2. ```sql
-   UPDATE film
-   SET rental_rate = 0.99
-   WHERE rental_rate > 4.99;
-   ```
+```sql
+CREATE TABLE authors (
+  author_id SERIAL PRIMARY KEY,
+  full_name VARCHAR(100) NOT NULL
+);
+```
 
-3. ```sql
-   DELETE FROM film
-   WHERE release_year < 2000;
-   ```
+**2. Insert authors:**
+
+```sql
+INSERT INTO authors (full_name) VALUES
+  ('Cal Newport'),
+  ('James Clear');
+```
+
+**3. Insert book:**
+
+```sql
+INSERT INTO books (title, author, publication_year, is_read)
+VALUES ('Deep Work', 'Cal Newport', 2016, true);
+```
 
 </details>
 
 ---
+
+# **Lesson 9: Expanding the Schema – Relationships and Constraints**
+
+## **Introduction**
+
+Now that we have a basic `books` table, it's time to expand the schema by adding related data. In this lesson, you will:
+
+- Create new tables that relate to existing ones.
+- Understand and implement one-to-many and many-to-many relationships.
+- Learn about foreign keys and constraints.
+
+---
+
+## **Walkthrough**
+
+### **1. One-to-Many: Notes on Books**
+
+```sql
+CREATE TABLE notes (
+  note_id SERIAL PRIMARY KEY,
+  book_id INTEGER NOT NULL REFERENCES books(book_id) ON DELETE CASCADE,
+  note_text TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+Add notes:
+
+```sql
+INSERT INTO notes (book_id, note_text) VALUES
+  (1, 'Great advice for clean coding'),
+  (1, 'Emphasizes the importance of naming');
+```
+
+### **2. Many-to-Many: Tags for Books**
+
+```sql
+CREATE TABLE tags (
+  tag_id SERIAL PRIMARY KEY,
+  name VARCHAR(50) UNIQUE NOT NULL
+);
+
+CREATE TABLE book_tags (
+  book_id INTEGER REFERENCES books(book_id) ON DELETE CASCADE,
+  tag_id INTEGER REFERENCES tags(tag_id) ON DELETE CASCADE,
+  PRIMARY KEY (book_id, tag_id)
+);
+```
+
+Add some tags:
+
+```sql
+INSERT INTO tags (name) VALUES ('Programming'), ('Self-Help');
+INSERT INTO book_tags (book_id, tag_id) VALUES (1, 1), (2, 1);
+```
+
+---
+
+## **Exercises**
+
+### **Objective:** Build out more complete relationships.
+
+### **Tasks:**
+
+1. Add a new tag: "Productivity"
+2. Add a new book: "Atomic Habits" by "James Clear" (2018, read)
+3. Tag "Atomic Habits" with "Self-Help" and "Productivity"
+4. Add two notes for "Atomic Habits"
+
+### **Solutions**
+
+<details>
+<summary>Click to view solutions</summary>
+
+**1. Add tag:**
+
+```sql
+INSERT INTO tags (name) VALUES ('Productivity');
+```
+
+**2. Add book:**
+
+```sql
+INSERT INTO books (title, author, publication_year, is_read)
+VALUES ('Atomic Habits', 'James Clear', 2018, true);
+```
+
+**3. Tag book:**
+
+```sql
+INSERT INTO book_tags (book_id, tag_id) VALUES (3, 2), (3, 3);
+```
+
+**4. Add notes:**
+
+```sql
+INSERT INTO notes (book_id, note_text) VALUES
+  (3, 'Focuses on habit stacking'),
+  (3, 'Easy to read with actionable advice');
+```
+
+</details>
+
+---
+
+# **Lesson 10: Modifying Schema – ALTER, ENUMs, and Domains**
+
+## **Introduction**
+
+In this lesson, you will learn how to evolve an existing schema by adding new columns, constraints, and custom types. We'll modify tables, add stronger validations, and introduce more expressive data types like ENUMs and DOMAINs.
+
+---
+
+## **Walkthrough**
+
+### **1. Create ENUM for Reading Status**
+
+```sql
+CREATE TYPE reading_status AS ENUM ('wishlist', 'reading', 'finished');
+
+ALTER TABLE books
+ADD COLUMN status reading_status DEFAULT 'wishlist';
+```
+
+### **2. Create DOMAIN for Valid Years**
+
+Instead of using `EXTRACT`, we will manually update this later.
+
+```sql
+CREATE DOMAIN valid_year AS INTEGER
+  CHECK (VALUE >= 1450 AND VALUE <= 2025); -- current year hardcEoded
+
+ALTER TABLE books
+ALTER COLUMN publication_year TYPE valid_year;
+```
+
+> You can manually adjust the year or refer to PostgreSQL documentation on `EXTRACT()` here: [https://www.postgresql.org/docs/current/functions-datetime.html](https://www.postgresql.org/docs/current/functions-datetime.html)
+
+### **3. Add a New Column with Constraints**
+
+```sql
+ALTER TABLE books
+ADD COLUMN rating INTEGER CHECK (rating BETWEEN 1 AND 5);
+
+UPDATE books
+SET rating = 5
+WHERE title = 'Clean Code';
+```
+
+---
+
+## **Exercises**
+
+### **Objective:** Modify schema with richer data types.
+
+### **Tasks:**
+
+1. Add a column `edition` (VARCHAR) to the `books` table.
+2. Create a new table `book_details` with one-to-one relation:
+
+   - `book_id` (PK, FK to books)
+   - `isbn` (unique)
+   - `publisher`
+
+3. Add `book_details` for "Deep Work"
+
+### **Solutions**
+
+<details>
+<summary>Click to view solutions</summary>
+
+**1. Add `edition` column:**
+
+```sql
+ALTER TABLE books ADD COLUMN edition VARCHAR(50);
+```
+
+**2. Create `book_details`:**
+
+```sql
+CREATE TABLE book_details (
+  book_id INTEGER PRIMARY KEY REFERENCES books(book_id) ON DELETE CASCADE,
+  isbn VARCHAR(20) UNIQUE,
+  publisher VARCHAR(100),
+  edition VARCHAR(50)
+);
+```
+
+**3. Add book detail:**
+
+```sql
+INSERT INTO book_details (book_id, isbn, publisher, edition)
+VALUES (2, '9781455586691', 'Grand Central Publishing', '1st Edition');
+```
+
+</details>
+
+---
+
+By completing these lessons, you now have a solid foundation in PostgreSQL schema design, relationships, constraints, data types, and schema evolution. Your Book Tracker project mirrors real-world data modeling patterns.
 
 # **Conclusion**
 
@@ -1256,6 +1525,8 @@ Congratulations! You've completed the beginner level SQL course. You've learned 
 - Use aggregate functions and group data with `GROUP BY` and `HAVING`.
 - Join tables to retrieve related data.
 - Write subqueries for complex queries.
+- Create and Delete databases
+- Basic Data types
 - Modify data using `INSERT`, `UPDATE`, and `DELETE`.
 
 ## **Next Steps**
@@ -1263,4 +1534,4 @@ Congratulations! You've completed the beginner level SQL course. You've learned 
 - **Practice**: The best way to solidify your understanding is by practicing. Try writing your own queries and experimenting with the data.
 - **Intermediate Level**: Once you're comfortable with these concepts, you're ready to move on to more advanced topics in the intermediate course.
 
-Feel free to ask any questions or request clarification on any topics covered. Happy querying!
+Feel free to ask any questions or request clarification on any topics covered in our [Q & A section](https://github.com/fedediiaz/learning-postgress/discussions/categories/q-a). Happy querying!
